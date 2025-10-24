@@ -123,8 +123,8 @@ $total_cars = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total F
             <p><?= $total_users ?></p>
         </div>
         <div class="stat-box">
-            <h3>Total Payments</h3>
-            <p><?= $total_payments ?></p>
+            <h3>Total Revenue</h3>
+            <p>₹<?= number_format($total_revenue, 2) ?></p>
         </div>
         <div class="stat-box">
             <h3>Total Cars</h3>
