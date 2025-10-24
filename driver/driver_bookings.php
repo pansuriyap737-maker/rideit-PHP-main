@@ -26,10 +26,28 @@ $completedSql = "SELECT p.payment_id, p.passenger_name, p.car_number_plate, p.pi
                  WHERE c.user_id = $driverId AND p.payment_status='Success' AND p.ride_status='completed'";
 $completedRes = mysqli_query($conn, $completedSql);
 
+// Create canceledtrip table if not exists
+mysqli_query($conn, "CREATE TABLE IF NOT EXISTS canceledtrip (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    payment_id INT(11) NOT NULL,
+    user_id INT(11) NOT NULL,
+    driver_id INT(11) DEFAULT NULL,
+    passenger_name VARCHAR(100) DEFAULT NULL,
+    driver_name VARCHAR(100) DEFAULT NULL,
+    car_number_plate VARCHAR(20) DEFAULT NULL,
+    pickup VARCHAR(255) DEFAULT NULL,
+    drop_location VARCHAR(255) DEFAULT NULL,
+    amount DECIMAL(10,2) DEFAULT NULL,
+    payment_mode VARCHAR(50) DEFAULT NULL,
+    canceled_by ENUM('passenger','driver') DEFAULT 'passenger',
+    canceled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 // Canceled rides
-$canceledSql = "SELECT p.payment_id, p.passenger_name, p.car_number_plate, p.pickup, p.drop_location, COALESCE(p.ride_datetime, c.date_time) AS ride_datetime, p.amount, COALESCE(p.payment_mode,'ONLINE') AS payment_mode
-                FROM payments p INNER JOIN cars c ON c.car_id = p.car_id
-                WHERE c.user_id = $driverId AND p.payment_status='Success' AND p.ride_status='canceled'";
+$canceledSql = "SELECT ct.payment_id, ct.passenger_name, ct.car_number_plate, ct.pickup, ct.drop_location, ct.canceled_at AS ride_datetime, ct.amount, COALESCE(ct.payment_mode,'ONLINE') AS payment_mode, ct.canceled_by
+                FROM canceledtrip ct
+                WHERE ct.driver_id = $driverId";
 $canceledRes = mysqli_query($conn, $canceledSql);
 
 // Totals
@@ -110,10 +128,14 @@ $totals = mysqli_fetch_assoc(mysqli_query($conn, $totalsSql));
                     <td><?= number_format((float)$r['amount'], 2) ?></td>
                     <td><?= htmlspecialchars($r['payment_mode']) ?></td>
                     <td class="actions">
-                        <form method="POST" action="ride_status_update.php">
+                        <form method="POST" action="ride_status_update.php" style="display:inline;">
                             <input type="hidden" name="payment_id" value="<?= (int)$r['payment_id'] ?>">
                             <input type="hidden" name="action" value="complete">
                             <button type="submit" class="btn btn-complete">Complete</button>
+                        </form>
+                        <form method="POST" action="driver_cancel.php" style="display:inline;">
+                            <input type="hidden" name="payment_id" value="<?= (int)$r['payment_id'] ?>">
+                            <button type="submit" class="btn" style="border-color:#c00;color:#c00;" onclick="return confirm('Cancel this trip?')">Cancel</button>
                         </form>
                     </td>
                 </tr>
@@ -157,7 +179,7 @@ $totals = mysqli_fetch_assoc(mysqli_query($conn, $totalsSql));
     <table>
         <thead>
             <tr>
-                <th>Passenger</th><th>Number Plate</th><th>Pickup</th><th>Drop</th><th>DateTime</th><th>Amount</th><th>Mode</th>
+                <th>Passenger</th><th>Number Plate</th><th>Pickup</th><th>Drop</th><th>Canceled Date</th><th>Amount</th><th>Mode</th><th>Canceled By</th>
             </tr>
         </thead>
         <tbody>
@@ -170,9 +192,10 @@ $totals = mysqli_fetch_assoc(mysqli_query($conn, $totalsSql));
                     <td><?= $r['ride_datetime'] ? date('d/m/Y H:i', strtotime($r['ride_datetime'])) : '-' ?></td>
                     <td><?= number_format((float)$r['amount'], 2) ?></td>
                     <td><?= htmlspecialchars($r['payment_mode']) ?></td>
+                    <td><?= ucfirst($r['canceled_by']) ?></td>
                 </tr>
             <?php endwhile; else: ?>
-                <tr><td colspan="7">No canceled trips.</td></tr>
+                <tr><td colspan="8">No canceled trips.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

@@ -2,16 +2,16 @@
 session_start();
 include('../config.php');
 
-if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: user_payment.php');
+if (!isset($_SESSION['driver_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: driver_bookings.php');
     exit();
 }
 
 $payment_id = (int)($_POST['payment_id'] ?? 0);
-$user_id = (int)$_SESSION['user_id'];
+$driver_id = (int)$_SESSION['driver_id'];
 
 if ($payment_id <= 0) {
-    header('Location: user_payment.php?error=invalid');
+    header('Location: driver_bookings.php?error=invalid');
     exit();
 }
 
@@ -28,7 +28,7 @@ mysqli_query($conn, "CREATE TABLE IF NOT EXISTS canceledtrip (
     drop_location VARCHAR(255) DEFAULT NULL,
     amount DECIMAL(10,2) DEFAULT NULL,
     payment_mode VARCHAR(50) DEFAULT NULL,
-    canceled_by ENUM('passenger','driver') DEFAULT 'passenger',
+    canceled_by ENUM('passenger','driver') DEFAULT 'driver',
     canceled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -36,11 +36,11 @@ mysqli_query($conn, "CREATE TABLE IF NOT EXISTS canceledtrip (
 // Get payment details and verify ownership
 $paymentQuery = "SELECT p.*, c.user_id as driver_id FROM payments p 
                 INNER JOIN cars c ON p.car_id = c.car_id 
-                WHERE p.payment_id = $payment_id AND p.user_id = $user_id AND p.ride_status IN ('pending','active')";
+                WHERE p.payment_id = $payment_id AND c.user_id = $driver_id AND p.ride_status IN ('pending','active')";
 $paymentRes = mysqli_query($conn, $paymentQuery);
 
 if (!$paymentRes || mysqli_num_rows($paymentRes) === 0) {
-    header('Location: user_payment.php?error=notfound');
+    header('Location: driver_bookings.php?error=notfound');
     exit();
 }
 
@@ -48,7 +48,7 @@ $payment = mysqli_fetch_assoc($paymentRes);
 
 // Insert into canceledtrip table
 $insertSql = "INSERT INTO canceledtrip (payment_id, user_id, driver_id, passenger_name, driver_name, car_number_plate, pickup, drop_location, amount, payment_mode, canceled_by) 
-              VALUES ($payment_id, $user_id, {$payment['driver_id']}, ?, ?, ?, ?, ?, {$payment['amount']}, ?, 'passenger')";
+              VALUES ($payment_id, {$payment['user_id']}, $driver_id, ?, ?, ?, ?, ?, {$payment['amount']}, ?, 'driver')";
 $stmt = mysqli_prepare($conn, $insertSql);
 mysqli_stmt_bind_param($stmt, 'ssssss', 
     $payment['passenger_name'], 
@@ -63,6 +63,6 @@ mysqli_stmt_execute($stmt);
 // Update payment status to canceled
 mysqli_query($conn, "UPDATE payments SET ride_status = 'canceled' WHERE payment_id = $payment_id");
 
-header('Location: user_payment.php?view=canceled&success=1');
+header('Location: driver_bookings.php?view=canceled&success=1');
 exit();
 ?>

@@ -71,18 +71,31 @@ $completedQ = "
     WHERE p.user_id = $userIdForFk AND p.payment_status='Success' AND p.ride_status='completed'
     ORDER BY p.payment_date DESC";
 
+// Create canceledtrip table if not exists
+mysqli_query($conn, "CREATE TABLE IF NOT EXISTS canceledtrip (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    payment_id INT(11) NOT NULL,
+    user_id INT(11) NOT NULL,
+    driver_id INT(11) DEFAULT NULL,
+    passenger_name VARCHAR(100) DEFAULT NULL,
+    driver_name VARCHAR(100) DEFAULT NULL,
+    car_number_plate VARCHAR(20) DEFAULT NULL,
+    pickup VARCHAR(255) DEFAULT NULL,
+    drop_location VARCHAR(255) DEFAULT NULL,
+    amount DECIMAL(10,2) DEFAULT NULL,
+    payment_mode VARCHAR(50) DEFAULT NULL,
+    canceled_by ENUM('passenger','driver') DEFAULT 'passenger',
+    canceled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 $canceledQ = "
-    SELECT p.payment_id, COALESCE(p.driver_name, d.name) AS driver_name,
-           COALESCE(p.car_number_plate, c.number_plate) AS car_number_plate,
-           COALESCE(p.pickup, c.pickup_location) AS pickup,
-           COALESCE(p.drop_location, c.drop_location) AS drop_location,
-           p.amount AS amount, COALESCE(p.payment_mode, 'ONLINE') AS payment_mode,
-           p.payment_status, p.payment_date, p.ride_status
-    FROM payments p
-    INNER JOIN cars c ON p.car_id = c.car_id
-    LEFT JOIN drivers d ON d.id = c.user_id
-    WHERE p.user_id = $userIdForFk AND p.payment_status='Success' AND p.ride_status='canceled'
-    ORDER BY p.payment_date DESC";
+    SELECT ct.payment_id, ct.driver_name, ct.car_number_plate, ct.pickup, ct.drop_location,
+           ct.amount, COALESCE(ct.payment_mode, 'ONLINE') AS payment_mode,
+           ct.canceled_by, ct.canceled_at
+    FROM canceledtrip ct
+    WHERE ct.user_id = $userIdForFk
+    ORDER BY ct.canceled_at DESC";
 
 $activeRes = mysqli_query($conn, $activeQ);
 $completedRes = mysqli_query($conn, $completedQ);
@@ -224,6 +237,8 @@ $totals = mysqli_fetch_assoc(mysqli_query($conn, $totalsSql));
                 <th class="user-payment">Drop</th>
                 <th class="user-payment">Amount</th>
                 <th class="user-payment">Payment Mode</th>
+                <th class="user-payment">Canceled By</th>
+                <th class="user-payment">Canceled Date</th>
             </tr>
             <?php if ($canceledRes && mysqli_num_rows($canceledRes) > 0): ?>
                 <?php while ($row = mysqli_fetch_assoc($canceledRes)): ?>
@@ -234,10 +249,12 @@ $totals = mysqli_fetch_assoc(mysqli_query($conn, $totalsSql));
                         <td class="user-ride-data"><?= htmlspecialchars($row['drop_location']) ?></td>
                         <td class="user-ride-data">₹<?= number_format($row['amount'], 2) ?></td>
                         <td class="user-ride-data"><?= htmlspecialchars($row['payment_mode']) ?></td>
+                        <td class="user-ride-data"><?= ucfirst($row['canceled_by']) ?></td>
+                        <td class="user-ride-data"><?= date('d/m/Y H:i', strtotime($row['canceled_at'])) ?></td>
                     </tr>
                 <?php endwhile; ?>
             <?php else: ?>
-                <tr><td colspan="6" class="user-ride-data">No canceled bookings.</td></tr>
+                <tr><td colspan="8" class="user-ride-data">No canceled bookings.</td></tr>
             <?php endif; ?>
         </table>
         </div>
