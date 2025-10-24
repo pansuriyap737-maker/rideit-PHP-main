@@ -3,55 +3,25 @@ session_start();
 include('../config.php'); // Assuming this has your database connection
 include('admin_header.php');
 
-// Check if completedtrip table exists
-$tableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'completedtrip'");
-$useCompletedTripTable = mysqli_num_rows($tableCheck) > 0;
-
-if ($useCompletedTripTable) {
-    // Fetch from completedtrip table
-    $query = "SELECT 
-        ct.id as payment_id,
-        ct.passenger_name,
-        (SELECT name FROM drivers WHERE id = ct.driver_id) AS driver_name,
-        (SELECT car_name FROM cars WHERE car_id = ct.car_id) AS car_name,
-        ct.car_number_plate,
-        ct.payment_mode,
-        ct.amount,
-        'Success' AS payment_status,
-        ct.completed_at AS payment_date,
-        ct.ride_datetime,
-        ct.pickup,
-        ct.drop_location,
-        'completed' AS ride_status
-    FROM completedtrip ct 
-    ORDER BY ct.completed_at DESC";
-    
-    // Calculate total payments from completedtrip
-    $total_query = "SELECT SUM(amount) as total_amount FROM completedtrip";
-} else {
-    // Fallback to payments table
-    $query = "SELECT 
-        p.payment_id,
-        p.passenger_name,
-        p.driver_name,
-        c.car_name,
-        p.car_number_plate,
-        p.payment_mode,
-        p.amount,
-        p.payment_status,
-        p.payment_date,
-        p.ride_datetime,
-        p.pickup,
-        p.drop_location,
-        p.ride_status
-    FROM payments p 
-    LEFT JOIN cars c ON p.car_id = c.car_id 
-    WHERE p.ride_status = 'completed' 
-    ORDER BY p.payment_date DESC";
-    
-    // Calculate total payments from payments table
-    $total_query = "SELECT SUM(amount) as total_amount FROM payments WHERE ride_status = 'completed'";
-}
+// Fetch completed trip payments from database
+$query = "SELECT 
+    p.payment_id,
+    p.passenger_name,
+    p.driver_name,
+    c.car_name,
+    p.car_number_plate,
+    p.payment_mode,
+    p.amount,
+    p.payment_status,
+    p.payment_date,
+    p.ride_datetime,
+    p.pickup,
+    p.drop_location,
+    p.ride_status
+FROM payments p 
+LEFT JOIN cars c ON p.car_id = c.car_id 
+WHERE p.ride_status = 'completed' 
+ORDER BY p.payment_date DESC";
 
 $result = mysqli_query($conn, $query);
 $payments = [];
@@ -62,6 +32,7 @@ if ($result) {
 }
 
 // Calculate total payments
+$total_query = "SELECT SUM(amount) as total_amount FROM payments WHERE ride_status = 'completed'";
 $total_result = mysqli_query($conn, $total_query);
 $total_amount = 0;
 if ($total_result) {

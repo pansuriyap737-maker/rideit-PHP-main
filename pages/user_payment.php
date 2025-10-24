@@ -58,92 +58,35 @@ $activeQ = "
     WHERE p.user_id = $userIdForFk AND p.payment_status='Success' AND p.ride_status IN ('pending','active')
     ORDER BY p.payment_date DESC";
 
-// Check if completedtrip table exists before querying it
-$tableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'completedtrip'");
-$completedRes = false;
+$completedQ = "
+    SELECT p.payment_id, COALESCE(p.driver_name, d.name) AS driver_name,
+           COALESCE(p.car_number_plate, c.number_plate) AS car_number_plate,
+           COALESCE(p.pickup, c.pickup_location) AS pickup,
+           COALESCE(p.drop_location, c.drop_location) AS drop_location,
+           p.amount AS amount, COALESCE(p.payment_mode, 'ONLINE') AS payment_mode,
+           p.payment_status, p.payment_date, p.ride_status
+    FROM payments p
+    INNER JOIN cars c ON p.car_id = c.car_id
+    LEFT JOIN drivers d ON d.id = c.user_id
+    WHERE p.user_id = $userIdForFk AND p.payment_status='Success' AND p.ride_status='completed'
+    ORDER BY p.payment_date DESC";
 
-if ($tableCheck && mysqli_num_rows($tableCheck) > 0) {
-    // Try to get completed trips from completedtrip table
-    $completedQ = "
-        SELECT ct.id AS payment_id, 
-               (SELECT name FROM drivers WHERE id = ct.driver_id) AS driver_name,
-               ct.car_number_plate,
-               ct.pickup,
-               ct.drop_location,
-               ct.amount, 
-               ct.payment_mode,
-               'Success' AS payment_status, 
-               ct.completed_at AS payment_date, 
-               'completed' AS ride_status
-        FROM completedtrip ct
-        WHERE ct.passenger_id = $userIdForFk
-        ORDER BY ct.completed_at DESC";
-
-    $completedRes = mysqli_query($conn, $completedQ);
-}
-
-// Fallback to payments table if completedtrip table doesn't exist yet
-if (!$completedRes) {
-    $completedQ = "
-        SELECT p.payment_id, COALESCE(p.driver_name, d.name) AS driver_name,
-               COALESCE(p.car_number_plate, c.number_plate) AS car_number_plate,
-               COALESCE(p.pickup, c.pickup_location) AS pickup,
-               COALESCE(p.drop_location, c.drop_location) AS drop_location,
-               p.amount AS amount, COALESCE(p.payment_mode, 'ONLINE') AS payment_mode,
-               p.payment_status, p.payment_date, p.ride_status
-        FROM payments p
-        INNER JOIN cars c ON p.car_id = c.car_id
-        LEFT JOIN drivers d ON d.id = c.user_id
-        WHERE p.user_id = $userIdForFk AND p.payment_status='Success' AND p.ride_status='completed'
-        ORDER BY p.payment_date DESC";
-    $completedRes = mysqli_query($conn, $completedQ);
-}
-
-// Check if canceledtrip table exists before querying it
-$canceledTableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'canceledtrip'");
-$canceledRes = false;
-
-if ($canceledTableCheck && mysqli_num_rows($canceledTableCheck) > 0) {
-    // Try to get canceled trips from canceledtrip table
-    $canceledQ = "
-        SELECT ct.id AS payment_id, 
-               (SELECT name FROM drivers WHERE id = ct.driver_id) AS driver_name,
-               ct.car_number_plate,
-               ct.pickup,
-               ct.drop_location,
-               ct.amount, 
-               ct.payment_mode,
-               'Success' AS payment_status, 
-               ct.canceled_at AS payment_date, 
-               'canceled' AS ride_status,
-               ct.canceled_by
-        FROM canceledtrip ct
-        WHERE ct.passenger_id = $userIdForFk
-        ORDER BY ct.canceled_at DESC";
-
-    $canceledRes = mysqli_query($conn, $canceledQ);
-}
-
-// Fallback to payments table if canceledtrip table doesn't exist yet
-if (!$canceledRes) {
-    $canceledQ = "
-        SELECT p.payment_id, COALESCE(p.driver_name, d.name) AS driver_name,
-               COALESCE(p.car_number_plate, c.number_plate) AS car_number_plate,
-               COALESCE(p.pickup, c.pickup_location) AS pickup,
-               COALESCE(p.drop_location, c.drop_location) AS drop_location,
-               p.amount AS amount, COALESCE(p.payment_mode, 'ONLINE') AS payment_mode,
-               p.payment_status, p.payment_date, p.ride_status,
-               'unknown' AS canceled_by
-        FROM payments p
-        INNER JOIN cars c ON p.car_id = c.car_id
-        LEFT JOIN drivers d ON d.id = c.user_id
-        WHERE p.user_id = $userIdForFk AND p.payment_status='Success' AND p.ride_status='canceled'
-        ORDER BY p.payment_date DESC";
-    $canceledRes = mysqli_query($conn, $canceledQ);
-}
+$canceledQ = "
+    SELECT p.payment_id, COALESCE(p.driver_name, d.name) AS driver_name,
+           COALESCE(p.car_number_plate, c.number_plate) AS car_number_plate,
+           COALESCE(p.pickup, c.pickup_location) AS pickup,
+           COALESCE(p.drop_location, c.drop_location) AS drop_location,
+           p.amount AS amount, COALESCE(p.payment_mode, 'ONLINE') AS payment_mode,
+           p.payment_status, p.payment_date, p.ride_status
+    FROM payments p
+    INNER JOIN cars c ON p.car_id = c.car_id
+    LEFT JOIN drivers d ON d.id = c.user_id
+    WHERE p.user_id = $userIdForFk AND p.payment_status='Success' AND p.ride_status='canceled'
+    ORDER BY p.payment_date DESC";
 
 $activeRes = mysqli_query($conn, $activeQ);
 $completedRes = mysqli_query($conn, $completedQ);
+$canceledRes = mysqli_query($conn, $canceledQ);
 
 // Totals
 $totalsSql = "SELECT 

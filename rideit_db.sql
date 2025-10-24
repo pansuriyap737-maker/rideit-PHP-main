@@ -436,64 +436,6 @@ ALTER TABLE `bookings`
 ALTER TABLE `payments`
   ADD CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `payments_ibfk_2` FOREIGN KEY (`car_id`) REFERENCES `cars` (`car_id`);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `completedtrip`
---
-
---
--- Table structure for table `completedtrip`
---
-
-CREATE TABLE `completedtrip` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `payment_id` int(11) NOT NULL,
-  `passenger_id` int(11) NOT NULL,
-  `driver_id` int(11) NOT NULL,
-  `car_id` int(11) DEFAULT NULL,
-  `passenger_name` varchar(100) NOT NULL,
-  `car_name` varchar(100) NOT NULL,
-  `car_number_plate` varchar(50) NOT NULL,
-  `pickup` varchar(100) NOT NULL,
-  `drop_location` varchar(100) NOT NULL,
-  `ride_datetime` datetime NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `payment_mode` varchar(50) NOT NULL,
-  `completed_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `payment_id` (`payment_id`),
-  KEY `driver_id` (`driver_id`),
-  KEY `passenger_id` (`passenger_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Table structure for table `canceledtrip`
---
-
-CREATE TABLE `canceledtrip` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `payment_id` int(11) NOT NULL,
-  `passenger_id` int(11) NOT NULL,
-  `driver_id` int(11) NOT NULL,
-  `car_id` int(11) DEFAULT NULL,
-  `passenger_name` varchar(100) NOT NULL,
-  `car_name` varchar(100) NOT NULL,
-  `car_number_plate` varchar(50) NOT NULL,
-  `pickup` varchar(100) NOT NULL,
-  `drop_location` varchar(100) NOT NULL,
-  `ride_datetime` datetime NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `payment_mode` varchar(50) NOT NULL,
-  `canceled_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `canceled_by` enum('driver','passenger') NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `payment_id` (`payment_id`),
-  KEY `driver_id` (`driver_id`),
-  KEY `passenger_id` (`passenger_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

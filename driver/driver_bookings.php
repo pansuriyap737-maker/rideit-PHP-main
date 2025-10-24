@@ -20,51 +20,17 @@ $activeSql = "SELECT p.payment_id, p.passenger_name, p.car_number_plate, p.picku
               WHERE c.user_id = $driverId AND p.payment_status='Success' AND p.ride_status='active'";
 $activeRes = mysqli_query($conn, $activeSql);
 
-// Check if completedtrip table exists before querying it
-$tableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'completedtrip'");
-$completedRes = false;
+// Completed rides
+$completedSql = "SELECT p.payment_id, p.passenger_name, p.car_number_plate, p.pickup, p.drop_location, COALESCE(p.ride_datetime, c.date_time) AS ride_datetime, p.amount, COALESCE(p.payment_mode,'ONLINE') AS payment_mode
+                 FROM payments p INNER JOIN cars c ON c.car_id = p.car_id
+                 WHERE c.user_id = $driverId AND p.payment_status='Success' AND p.ride_status='completed'";
+$completedRes = mysqli_query($conn, $completedSql);
 
-if ($tableCheck && mysqli_num_rows($tableCheck) > 0) {
-    // Completed rides - get from completedtrip table
-    $completedSql = "SELECT ct.id, ct.passenger_name, ct.car_number_plate, ct.pickup, ct.drop_location, 
-                     ct.ride_datetime, ct.amount, ct.payment_mode, ct.completed_at
-                     FROM completedtrip ct 
-                     WHERE ct.driver_id = $driverId
-                     ORDER BY ct.completed_at DESC";
-    $completedRes = mysqli_query($conn, $completedSql);
-}
-
-// Fallback to payments table if completedtrip table doesn't exist yet
-if (!$completedRes) {
-    $completedSql = "SELECT p.payment_id, p.passenger_name, p.car_number_plate, p.pickup, p.drop_location, 
-                     COALESCE(p.ride_datetime, c.date_time) AS ride_datetime, p.amount, COALESCE(p.payment_mode,'ONLINE') AS payment_mode
-                     FROM payments p INNER JOIN cars c ON c.car_id = p.car_id
-                     WHERE c.user_id = $driverId AND p.payment_status='Success' AND p.ride_status='completed'";
-    $completedRes = mysqli_query($conn, $completedSql);
-}
-
-// Check if canceledtrip table exists before querying it
-$canceledTableCheck = mysqli_query($conn, "SHOW TABLES LIKE 'canceledtrip'");
-$canceledRes = false;
-
-if ($canceledTableCheck && mysqli_num_rows($canceledTableCheck) > 0) {
-    // Canceled rides - get from canceledtrip table
-    $canceledSql = "SELECT ct.id, ct.passenger_name, ct.car_number_plate, ct.pickup, ct.drop_location, 
-                     ct.ride_datetime, ct.amount, ct.payment_mode, ct.canceled_at, ct.canceled_by
-                     FROM canceledtrip ct 
-                     WHERE ct.driver_id = $driverId
-                     ORDER BY ct.canceled_at DESC";
-    $canceledRes = mysqli_query($conn, $canceledSql);
-}
-
-// Fallback to payments table if canceledtrip table doesn't exist yet
-if (!$canceledRes) {
-    $canceledSql = "SELECT p.payment_id, p.passenger_name, p.car_number_plate, p.pickup, p.drop_location, 
-                    COALESCE(p.ride_datetime, c.date_time) AS ride_datetime, p.amount, COALESCE(p.payment_mode,'ONLINE') AS payment_mode
-                    FROM payments p INNER JOIN cars c ON c.car_id = p.car_id
-                    WHERE c.user_id = $driverId AND p.payment_status='Success' AND p.ride_status='canceled'";
-    $canceledRes = mysqli_query($conn, $canceledSql);
-}
+// Canceled rides
+$canceledSql = "SELECT p.payment_id, p.passenger_name, p.car_number_plate, p.pickup, p.drop_location, COALESCE(p.ride_datetime, c.date_time) AS ride_datetime, p.amount, COALESCE(p.payment_mode,'ONLINE') AS payment_mode
+                FROM payments p INNER JOIN cars c ON c.car_id = p.car_id
+                WHERE c.user_id = $driverId AND p.payment_status='Success' AND p.ride_status='canceled'";
+$canceledRes = mysqli_query($conn, $canceledSql);
 
 // Totals
 $totalsSql = "SELECT 
@@ -164,7 +130,7 @@ $totals = mysqli_fetch_assoc(mysqli_query($conn, $totalsSql));
     <table>
         <thead>
             <tr>
-                <th>Passenger</th><th>Number Plate</th><th>Pickup</th><th>Drop</th><th>DateTime</th><th>Amount</th><th>Mode</th><th>Completed At</th>
+                <th>Passenger</th><th>Number Plate</th><th>Pickup</th><th>Drop</th><th>DateTime</th><th>Amount</th><th>Mode</th>
             </tr>
         </thead>
         <tbody>
@@ -177,10 +143,9 @@ $totals = mysqli_fetch_assoc(mysqli_query($conn, $totalsSql));
                     <td><?= $r['ride_datetime'] ? date('d/m/Y H:i', strtotime($r['ride_datetime'])) : '-' ?></td>
                     <td><?= number_format((float)$r['amount'], 2) ?></td>
                     <td><?= htmlspecialchars($r['payment_mode']) ?></td>
-                    <td><?= isset($r['completed_at']) ? date('d/m/Y H:i', strtotime($r['completed_at'])) : '-' ?></td>
                 </tr>
             <?php endwhile; else: ?>
-                <tr><td colspan="8">No completed trips.</td></tr>
+                <tr><td colspan="7">No completed trips.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

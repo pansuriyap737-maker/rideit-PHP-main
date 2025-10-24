@@ -7,59 +7,9 @@ include('../config.php'); // Assuming this has your database connection
 $driverId = isset($_SESSION['driver_id']) ? (int)$_SESSION['driver_id'] : 0;
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// First, check for completed or canceled trips before deleting cars with past dates
-$currentDate = date('Y-m-d H:i:s');
-$pastCarsQuery = "SELECT car_id FROM cars WHERE user_id = $driverId AND date_time < '$currentDate'";
-$pastCarsResult = mysqli_query($conn, $pastCarsQuery);
-
-if ($pastCarsResult && mysqli_num_rows($pastCarsResult) > 0) {
-    while ($pastCar = mysqli_fetch_assoc($pastCarsResult)) {
-        $carId = (int)$pastCar['car_id'];
-        $skipDeletion = false;
-        
-        // Check if this car has any completed trips
-        $checkCompletedTrips = mysqli_query($conn, "SHOW TABLES LIKE 'completedtrip'");
-        if ($checkCompletedTrips && mysqli_num_rows($checkCompletedTrips) > 0) {
-            // Only delete the car if it doesn't have completed trips
-            $hasCompletedTrips = mysqli_query($conn, "SELECT id FROM completedtrip WHERE car_id = $carId LIMIT 1");
-            if ($hasCompletedTrips && mysqli_num_rows($hasCompletedTrips) > 0) {
-                // Skip deletion for cars with completed trips
-                $skipDeletion = true;
-            }
-        }
-        
-        // Check if this car has any canceled trips in canceledtrip table
-        $checkCanceledTrips = mysqli_query($conn, "SHOW TABLES LIKE 'canceledtrip'");
-        if (!$skipDeletion && $checkCanceledTrips && mysqli_num_rows($checkCanceledTrips) > 0) {
-            $hasCanceledTripsInTable = mysqli_query($conn, "SELECT id FROM canceledtrip WHERE car_id = $carId LIMIT 1");
-            if ($hasCanceledTripsInTable && mysqli_num_rows($hasCanceledTripsInTable) > 0) {
-                // Skip deletion for cars with canceled trips in canceledtrip table
-                $skipDeletion = true;
-            }
-        }
-        
-        // Check if this car has any canceled trips in payments table (fallback)
-        if (!$skipDeletion) {
-            $hasCanceledTrips = mysqli_query($conn, "SELECT payment_id FROM payments WHERE car_id = $carId AND ride_status = 'canceled' LIMIT 1");
-            if ($hasCanceledTrips && mysqli_num_rows($hasCanceledTrips) > 0) {
-                // Skip deletion for cars with canceled trips
-                $skipDeletion = true;
-            }
-        }
-        
-        // Delete car if it has no completed or canceled trips
-        if (!$skipDeletion) {
-            // First, set car_id to NULL in canceledtrip table for this car
-            $checkCanceledTrips = mysqli_query($conn, "SHOW TABLES LIKE 'canceledtrip'");
-            if ($checkCanceledTrips && mysqli_num_rows($checkCanceledTrips) > 0) {
-                mysqli_query($conn, "UPDATE canceledtrip SET car_id = NULL WHERE car_id = $carId");
-            }
-            
-            // Then delete the car
-            mysqli_query($conn, "DELETE FROM cars WHERE car_id = $carId");
-        }
-    }
-}
+// First, delete cars with past dates automatically
+$deletePastCars = "DELETE FROM cars WHERE user_id = $driverId AND date_time < NOW()";
+mysqli_query($conn, $deletePastCars);
 
 // Get all cars for this driver
 $allCarsQuery = "SELECT c.* FROM cars c WHERE c.user_id = $driverId ORDER BY c.date_time DESC";
