@@ -133,13 +133,13 @@ $result = mysqli_query($conn, $query);
                         <p id="date-time">DateTime: <b><?= date('d M Y, h:i A', strtotime($car['date_time'])) ?></b></p>
                         <h3 id="pricetag">₹<?= number_format($car['amount']) ?></h3>
                         <p id="capacity">Seating Capacity: <b><?= $car['seating'] ?? '-' ?></b></p>
-                        <?php if ($available > 0): ?>
+                        <?php if ($car['booked_seats'] == 0): ?>
                             <form method="GET" action="checkout.php" style="margin:0;">
                                 <input type="hidden" name="car_id" value="<?= (int)$car['car_id'] ?>">
                                 <button type="submit" id="ride-book">Book Now</button>
                             </form>
                         <?php else: ?>
-                            <div style="color:red; font-weight:bold; margin-top:10px;">Fully Booked</div>
+                            <button style="background-color:red; color:white; border:none; border-radius:10px; padding:10px; margin:10px auto 4px; width:90%; height:40px; font-size:15px; font-weight:600; cursor:not-allowed;" disabled>Fully Booked</button>
                         <?php endif; ?>
                     </div>
                 <?php endwhile; ?>

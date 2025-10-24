@@ -63,6 +63,11 @@ mysqli_stmt_execute($stmt);
 // Update payment status to completed
 mysqli_query($conn, "UPDATE payments SET ride_status = 'completed' WHERE payment_id = $payment_id");
 
+// Delete all related records first, then car from cars table when ride is completed
+mysqli_query($conn, "DELETE FROM bookings WHERE car_id = {$payment['car_id']}");
+mysqli_query($conn, "DELETE FROM payments WHERE car_id = {$payment['car_id']}");
+mysqli_query($conn, "DELETE FROM cars WHERE car_id = {$payment['car_id']}");
+
 header('Location: driver_bookings.php?view=completed&success=1');
 exit();
 ?>

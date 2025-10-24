@@ -10,8 +10,10 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 // Fetch totals from the database
-$total_users = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pessanger"))['total'];
-$total_payments = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM payments"))['total'];
+$passengers = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM pessanger"))['total'];
+$drivers = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM drivers"))['total'];
+$total_users = $passengers + $drivers;
+$total_revenue = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(amount) AS total FROM completedtrip"))['total'] ?? 0;
 $total_cars = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) AS total FROM cars"))['total'];
 ?>
 
