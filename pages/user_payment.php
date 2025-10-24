@@ -59,19 +59,14 @@ $activeQ = "
     ORDER BY p.payment_date DESC";
 
 $completedQ = "
-    SELECT p.payment_id, COALESCE(p.driver_name, d.name) AS driver_name,
-           COALESCE(p.car_number_plate, c.number_plate) AS car_number_plate,
-           COALESCE(p.pickup, c.pickup_location) AS pickup,
-           COALESCE(p.drop_location, c.drop_location) AS drop_location,
-           p.amount AS amount, COALESCE(p.payment_mode, 'ONLINE') AS payment_mode,
-           p.payment_status, p.payment_date, p.ride_status
-    FROM payments p
-    INNER JOIN cars c ON p.car_id = c.car_id
-    LEFT JOIN drivers d ON d.id = c.user_id
-    WHERE p.user_id = $userIdForFk AND p.payment_status='Success' AND p.ride_status='completed'
-    ORDER BY p.payment_date DESC";
+    SELECT ct.payment_id, ct.driver_name, ct.car_number_plate, ct.pickup, ct.drop_location,
+           ct.amount, COALESCE(ct.payment_mode, 'ONLINE') AS payment_mode,
+           ct.completed_at
+    FROM completedtrip ct
+    WHERE ct.user_id = $userIdForFk
+    ORDER BY ct.completed_at DESC";
 
-// Create canceledtrip table if not exists
+// Create tables if not exist
 mysqli_query($conn, "CREATE TABLE IF NOT EXISTS canceledtrip (
     id INT(11) NOT NULL AUTO_INCREMENT,
     payment_id INT(11) NOT NULL,
@@ -89,6 +84,22 @@ mysqli_query($conn, "CREATE TABLE IF NOT EXISTS canceledtrip (
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+mysqli_query($conn, "CREATE TABLE IF NOT EXISTS completedtrip (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    payment_id INT(11) NOT NULL,
+    user_id INT(11) NOT NULL,
+    driver_id INT(11) DEFAULT NULL,
+    passenger_name VARCHAR(100) DEFAULT NULL,
+    driver_name VARCHAR(100) DEFAULT NULL,
+    car_number_plate VARCHAR(20) DEFAULT NULL,
+    pickup VARCHAR(255) DEFAULT NULL,
+    drop_location VARCHAR(255) DEFAULT NULL,
+    amount DECIMAL(10,2) DEFAULT NULL,
+    payment_mode VARCHAR(50) DEFAULT NULL,
+    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 $canceledQ = "
     SELECT ct.payment_id, ct.driver_name, ct.car_number_plate, ct.pickup, ct.drop_location,
            ct.amount, COALESCE(ct.payment_mode, 'ONLINE') AS payment_mode,
@@ -103,9 +114,10 @@ $canceledRes = mysqli_query($conn, $canceledQ);
 
 // Totals
 $totalsSql = "SELECT 
-  SUM(CASE WHEN p.ride_status='completed' THEN 1 ELSE 0 END) AS total_trips,
-  SUM(CASE WHEN p.ride_status='completed' THEN p.amount ELSE 0 END) AS total_amount
-FROM payments p WHERE p.user_id = $userIdForFk AND p.payment_status='Success'";
+  COUNT(*) AS total_trips,
+  SUM(ct.amount) AS total_amount
+FROM completedtrip ct
+WHERE ct.user_id = $userIdForFk";
 $totals = mysqli_fetch_assoc(mysqli_query($conn, $totalsSql));
 
 // no single query now; we use view-specific result sets

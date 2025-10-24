@@ -223,7 +223,7 @@ if ($allCarsResult) {
                     <th>Car Name</th>
                     <th>Number Plate</th>
                     <th>Seating Capacity</th>
-                    <th>Available Seats</th>
+
                     <th>Pickup</th>
                     <th>Drop</th>
                     <th>Booking DateTime</th>
@@ -245,11 +245,7 @@ if ($allCarsResult) {
                             <td><?php echo htmlspecialchars($car['car_name']); ?></td>
                             <td><?php echo htmlspecialchars($car['number_plate']); ?></td>
                             <td><?php echo htmlspecialchars($car['seating']); ?></td>
-                            <td>
-                                <strong style="color: <?php echo ($car['seating'] - $car['booked_seats']) > 0 ? '#28a745' : '#dc3545'; ?>;">
-                                    <?php echo ($car['seating'] - $car['booked_seats']); ?>
-                                </strong>
-                            </td>
+
                             <td><?php echo htmlspecialchars($car['pickup_location']); ?></td>
                             <td><?php echo htmlspecialchars($car['drop_location']); ?></td>
                             <td><?php echo $car['date_time'] ? date('d/m/Y H:i', strtotime($car['date_time'])) : ''; ?></td>
@@ -261,7 +257,7 @@ if ($allCarsResult) {
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <tr><td colspan="10" class="no-cars">No available trips found.</td></tr>
+                    <tr><td colspan="9" class="no-cars">No available trips found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

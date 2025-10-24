@@ -3,25 +3,40 @@ session_start();
 include('../config.php'); // Assuming this has your database connection
 include('admin_header.php');
 
+// Create completedtrip table if not exists
+mysqli_query($conn, "CREATE TABLE IF NOT EXISTS completedtrip (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    payment_id INT(11) NOT NULL,
+    user_id INT(11) NOT NULL,
+    driver_id INT(11) DEFAULT NULL,
+    passenger_name VARCHAR(100) DEFAULT NULL,
+    driver_name VARCHAR(100) DEFAULT NULL,
+    car_number_plate VARCHAR(20) DEFAULT NULL,
+    pickup VARCHAR(255) DEFAULT NULL,
+    drop_location VARCHAR(255) DEFAULT NULL,
+    amount DECIMAL(10,2) DEFAULT NULL,
+    payment_mode VARCHAR(50) DEFAULT NULL,
+    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 // Fetch completed trip payments from database
 $query = "SELECT 
-    p.payment_id,
-    p.passenger_name,
-    p.driver_name,
-    c.car_name,
-    p.car_number_plate,
-    p.payment_mode,
-    p.amount,
-    p.payment_status,
-    p.payment_date,
-    p.ride_datetime,
-    p.pickup,
-    p.drop_location,
-    p.ride_status
-FROM payments p 
-LEFT JOIN cars c ON p.car_id = c.car_id 
-WHERE p.ride_status = 'completed' 
-ORDER BY p.payment_date DESC";
+    ct.payment_id,
+    ct.passenger_name,
+    ct.driver_name,
+    '' as car_name,
+    ct.car_number_plate,
+    ct.payment_mode,
+    ct.amount,
+    'Success' as payment_status,
+    ct.completed_at as payment_date,
+    ct.completed_at as ride_datetime,
+    ct.pickup,
+    ct.drop_location,
+    'completed' as ride_status
+FROM completedtrip ct 
+ORDER BY ct.completed_at DESC";
 
 $result = mysqli_query($conn, $query);
 $payments = [];
@@ -32,7 +47,7 @@ if ($result) {
 }
 
 // Calculate total payments
-$total_query = "SELECT SUM(amount) as total_amount FROM payments WHERE ride_status = 'completed'";
+$total_query = "SELECT SUM(amount) as total_amount FROM completedtrip";
 $total_result = mysqli_query($conn, $total_query);
 $total_amount = 0;
 if ($total_result) {
