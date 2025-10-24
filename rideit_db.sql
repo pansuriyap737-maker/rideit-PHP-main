@@ -24,6 +24,32 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `canceledtrip`
+--
+
+CREATE TABLE `canceledtrip` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `payment_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `car_id` int(11) NOT NULL,
+  `driver_name` varchar(255) NOT NULL,
+  `passenger_name` varchar(255) NOT NULL,
+  `car_number_plate` varchar(50) NOT NULL,
+  `pickup` varchar(255) NOT NULL,
+  `drop_location` varchar(255) NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `payment_mode` varchar(50) NOT NULL,
+  `canceled_by` enum('driver','passenger') NOT NULL,
+  `canceled_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `payment_id` (`payment_id`),
+  KEY `user_id` (`user_id`),
+  KEY `car_id` (`car_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `admin`
 --
 
@@ -394,6 +420,32 @@ ALTER TABLE `feedback`
 --
 ALTER TABLE `payments`
   MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `canceledtrip`
+--
+
+CREATE TABLE `canceledtrip` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `payment_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `car_id` int(11) NOT NULL,
+  `driver_name` varchar(100) DEFAULT NULL,
+  `passenger_name` varchar(100) DEFAULT NULL,
+  `car_number_plate` varchar(50) DEFAULT NULL,
+  `pickup` varchar(100) DEFAULT NULL,
+  `drop_location` varchar(100) DEFAULT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `payment_mode` varchar(20) DEFAULT NULL,
+  `canceled_by` enum('driver','passenger') DEFAULT NULL,
+  `canceled_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `payment_id` (`payment_id`),
+  KEY `user_id` (`user_id`),
+  KEY `car_id` (`car_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- AUTO_INCREMENT for table `users`
